@@ -496,7 +496,7 @@ def ssrf():
         in: formData
         type: string
         required: true
-        description: A URL to fetch content from.
+        description: A URL key to fetch content from.
     responses:
       200:
         description: Displays the content of the fetched URL.
@@ -504,16 +504,17 @@ def ssrf():
     if request.method == 'POST':
         url = request.form.get('url')
         try:
-         
-            
-            # Mitigation: Implement a whitelist to only allow requests to trusted domains.
-            # from urllib.parse import urlparse
-            # allowed_domains = ['example.com', 'trusted.com']
-            # domain = urlparse(url).netloc
-            # if domain not in allowed_domains:
-            #     return render_template('ssrf.html', content="Error: Domain not allowed.")
+            # Only allow server-approved destinations (prevents full SSRF).
+            allowed_urls = {
+                "example": "https://example.com",
+                "trusted": "https://trusted.com"
+            }
 
-            content = requests.get(url).text
+            target_url = allowed_urls.get(url)
+            if not target_url:
+                return render_template('ssrf.html', content="Error: URL not allowed.")
+
+            content = requests.get(target_url, timeout=5).text
             return render_template('ssrf.html', content=content)
         except requests.exceptions.RequestException as e:
             return render_template('ssrf.html', content=f"Error: {e}")
